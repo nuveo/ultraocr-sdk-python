@@ -1,6 +1,6 @@
 import requests
 import time
-from ultraocr.helpers import BearerAuth
+from ultraocr.helpers import BearerAuth, upload_file
 from ultraocr.exceptions import TimeoutException
 from ultraocr.constants import (
     Resource,
@@ -86,6 +86,8 @@ class Client:
         self,
         service: str,
         file: str,
+        facematch_file: str,
+        extra_file: str,
         metadata: dict = None,
         params: dict = None,
     ):
@@ -108,12 +110,18 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
-        # TODO facematch/extra document
+        url = f"{self.base_url}/job/send/{service}"
         body = {
             **metadata,
             "data": file,
         }
-        url = f"{self.base_url}/job/send/{service}"
+
+        if params and params.get("facematch") == "true":
+            body.update("facematch", facematch_file)
+
+        if params and params.get("extra-document") == "true":
+            body.update("extra", extra_file)
+
         resp = self._post(url, json=body, params=params)
         return resp.json()
 
@@ -150,6 +158,7 @@ class Client:
             }
         """
         url = f"{self.base_url}/{resource}/{service}"
+
         resp = self._post(url, json=metadata, params=params)
         return resp.json()
 
@@ -179,8 +188,9 @@ class Client:
                 "status": "done"
             }
         """
-        route = f"{self.base_url}/batch/status/{batch_id}"
-        resp = self._get(route)
+        url = f"{self.base_url}/batch/status/{batch_id}"
+
+        resp = self._get(url)
         return resp.json()
 
     def get_job_result(self, batch_id: str, job_id: str):
@@ -218,14 +228,17 @@ class Client:
                 "status": "done"
             }
         """
-        route = f"{self.base_url}/job/result/{batch_id}/{job_id}"
-        resp = self._get(route)
+        url = f"{self.base_url}/job/result/{batch_id}/{job_id}"
+
+        resp = self._get(url)
         return resp.json(), resp.status_code
 
     def send_job(
         self,
         service: str,
         file_path: str,
+        facematch_file_path: str = "",
+        extra_file_path: str = "",
         metadata: dict = None,
         params: dict = None,
     ):
@@ -247,17 +260,24 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
-        # TODO facematch/extra document
-        with open(file_path, "rb") as file_bin:
-            data = file_bin.read()
-
         res = self.generate_signed_url(service, metadata, params, Resource.JOB)
+        urls = res.get("urls", {})
         job_data = {
             "id": res.get("id"),
             "status_url": res.get("status_url"),
         }
-        url = res.get("urls", {}).get("document")
-        requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
+
+        url = urls.get("document")
+        upload_file(url, file_path)
+
+        if params and params.get("facematch") == "true":
+            facematch_url = urls.get("selfie")
+            upload_file(facematch_url, facematch_file_path)
+
+        if params and params.get("extra-document") == "true":
+            extra_url = urls.get("extra_document")
+            upload_file(extra_url, extra_file_path)
+
         return job_data
 
     def send_batch(
@@ -281,22 +301,23 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
-        with open(file_path, "rb") as file_bin:
-            data = file_bin.read()
-
         res = self.generate_signed_url(service, metadata, params, Resource.BATCH)
+        url = res.get("urls", {}).get("document")
         batch_data = {
             "id": res.get("id"),
             "status_url": res.get("status_url"),
         }
-        url = res.get("urls", {}).get("document")
-        requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
+
+        upload_file(url, file_path)
+
         return batch_data
 
     def send_job_base64(
         self,
         service: str,
         file: str,
+        facematch_file: str = "",
+        extra_file: str = "",
         metadata: dict = None,
         params: dict = None,
     ):
@@ -319,19 +340,29 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
-        # TODO facematch/extra document
         params = {
             **params,
             "base64": "true",
         }
 
         res = self.generate_signed_url(service, metadata, params, Resource.JOB)
+        urls = res.get("urls", {})
         job_data = {
             "id": res.get("id"),
             "status_url": res.get("status_url"),
         }
-        url = res.get("urls", {}).get("document")
+
+        url = urls.get("document")
         requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
+
+        if params and params.get("facematch") == "true":
+            facematch_url = urls.get("selfie")
+            requests.put(facematch_url, data=facematch_file, timeout=UPLOAD_TIMEOUT)
+
+        if params and params.get("extra-document") == "true":
+            extra_url = urls.get("extra_document")
+            requests.put(extra_url, data=extra_file, timeout=UPLOAD_TIMEOUT)
+
         return job_data
 
     def send_batch_base64(
@@ -364,14 +395,16 @@ class Client:
             **params,
             "base64": "true",
         }
+
         res = self.generate_signed_url(service, metadata, params, Resource.BATCH)
+        url = res.get("urls", {}).get("document")
         batch_data = {
             "id": res.get("id"),
             "status_url": res.get("status_url"),
         }
 
-        url = res.get("urls", {}).get("document")
         requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
+
         return batch_data
 
     def wait_for_job_done(self, batch_id: str, job_id: str):
