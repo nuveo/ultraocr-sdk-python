@@ -1,8 +1,15 @@
 import requests
 import time
 from ultraocr.helpers import BearerAuth
-from ultraocr.enums import Resource
 from ultraocr.exceptions import TimeoutException
+from ultraocr.constants import (
+    Resource,
+    POOLING_INTERVAL,
+    API_TIMEOUT,
+    UPLOAD_TIMEOUT,
+    BASE_URL,
+    AUTH_BASE_URL,
+)
 
 
 class Client:
@@ -12,11 +19,6 @@ class Client:
     access the oficial system documentation on https://docs.nuveo.ai/ocr/v2/.
 
     """
-
-    POOLING_INTERVAL = 1
-    API_TIMEOUT = 30
-    BASE_URL = "https://ultraocr.apis.nuveo.ai/v2/"
-    AUTH_BASE_URL = "https://auth.apis.nuveo.ai/v2/"
 
     def __init__(
         self,
@@ -34,6 +36,34 @@ class Client:
     def _bearer_token(self):
         return BearerAuth(self.token)
 
+    def _post(
+        self,
+        url: str,
+        json: dict = None,
+        params: dict = None,
+        timeout: int = API_TIMEOUT,
+    ):
+        return requests.post(
+            url,
+            auth=self._bearer_token(),
+            json=json,
+            params=params,
+            timeout=timeout,
+        )
+
+    def _get(
+        self,
+        url: str,
+        params: dict = None,
+        timeout: int = API_TIMEOUT,
+    ):
+        return requests.get(
+            url,
+            auth=self._bearer_token(),
+            params=params,
+            timeout=timeout,
+        )
+
     def authenticate(self, client_id: str, client_secret: str) -> None:
         """Authenticate on UltraOCR.
 
@@ -49,7 +79,7 @@ class Client:
             "ClientSecret": client_secret,
         }
 
-        resp = requests.post(url, json=data)
+        resp = requests.post(url, json=data, timeout=API_TIMEOUT)
         self.token = resp.json()["token"]
 
     def send_job_single_step(
@@ -84,7 +114,7 @@ class Client:
             "data": file,
         }
         url = f"{self.base_url}/job/send/{service}"
-        resp = requests.post(url, auth=self._bearer_token(), json=body, params=params)
+        resp = self._post(url, json=body, params=params)
         return resp.json()
 
     def generate_signed_url(
@@ -120,9 +150,7 @@ class Client:
             }
         """
         url = f"{self.base_url}/{resource}/{service}"
-        resp = requests.post(
-            url, auth=self._bearer_token(), json=metadata, params=params
-        )
+        resp = self._post(url, json=metadata, params=params)
         return resp.json()
 
     def get_batch_status(self, batch_id: str):
@@ -152,7 +180,7 @@ class Client:
             }
         """
         route = f"{self.base_url}/batch/status/{batch_id}"
-        resp = requests.get(route, auth=self._bearer_token())
+        resp = self._get(route)
         return resp.json()
 
     def get_job_result(self, batch_id: str, job_id: str):
@@ -191,7 +219,7 @@ class Client:
             }
         """
         route = f"{self.base_url}/job/result/{batch_id}/{job_id}"
-        resp = requests.get(route, auth=self._bearer_token())
+        resp = self._get(route)
         return resp.json(), resp.status_code
 
     def send_job(
@@ -229,7 +257,7 @@ class Client:
             "status_url": res.get("status_url"),
         }
         url = res.get("urls", {}).get("document")
-        requests.put(url, data=data)
+        requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
         return job_data
 
     def send_batch(
@@ -262,7 +290,7 @@ class Client:
             "status_url": res.get("status_url"),
         }
         url = res.get("urls", {}).get("document")
-        requests.put(url, data=data)
+        requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
         return batch_data
 
     def send_job_base64(
@@ -303,7 +331,7 @@ class Client:
             "status_url": res.get("status_url"),
         }
         url = res.get("urls", {}).get("document")
-        requests.put(url, data=file)
+        requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
         return job_data
 
     def send_batch_base64(
@@ -343,7 +371,7 @@ class Client:
         }
 
         url = res.get("urls", {}).get("document")
-        requests.put(url, data=file)
+        requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
         return batch_data
 
     def wait_for_job_done(self, batch_id: str, job_id: str):
