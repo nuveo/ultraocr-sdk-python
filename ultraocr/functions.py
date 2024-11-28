@@ -1,6 +1,8 @@
 import requests
 import time
-from ultraocr.helpers import BearerAuth, upload_file
+from http import HTTPStatus
+from datetime import datetime, timedelta
+from ultraocr.helpers import BearerAuth, upload_file, validate_status_code
 from ultraocr.exceptions import TimeoutException
 from ultraocr.constants import (
     Resource,
@@ -9,6 +11,7 @@ from ultraocr.constants import (
     UPLOAD_TIMEOUT,
     BASE_URL,
     AUTH_BASE_URL,
+    DEFAULT_EXPIRATION_TIME,
 )
 
 
@@ -22,6 +25,10 @@ class Client:
 
     def __init__(
         self,
+        client_id: str = "",
+        client_secret: str = "",
+        token_expires: int = DEFAULT_EXPIRATION_TIME,
+        auto_refresh: bool = False,
         auth_base_url: str = AUTH_BASE_URL,
         base_url: str = BASE_URL,
         timeout: int = API_TIMEOUT,
@@ -31,6 +38,11 @@ class Client:
         self.base_url = base_url
         self.timeout = timeout
         self.interval = interval
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.auto_refresh = auto_refresh
+        self.expires = token_expires
+        self.expires_at = datetime.now()
         self.token = ""
 
     def _bearer_token(self):
@@ -43,6 +55,8 @@ class Client:
         params: dict = None,
         timeout: int = API_TIMEOUT,
     ):
+        self._auto_authenticate()
+
         return requests.post(
             url,
             auth=self._bearer_token(),
@@ -57,6 +71,8 @@ class Client:
         params: dict = None,
         timeout: int = API_TIMEOUT,
     ):
+        self._auto_authenticate()
+
         return requests.get(
             url,
             auth=self._bearer_token(),
@@ -64,7 +80,17 @@ class Client:
             timeout=timeout,
         )
 
-    def authenticate(self, client_id: str, client_secret: str) -> None:
+    def _authenticate(self) -> None:
+        self.authenticate(self.client_id, self.client_secret, self.expires)
+        self.expires_at = datetime.now() + timedelta(minutes=self.expires)
+
+    def _auto_authenticate(self) -> None:
+        if self.auto_refresh and datetime.now() > self.expires_at:
+            self._authenticate()
+
+    def authenticate(
+        self, client_id: str, client_secret: str, expires: int = DEFAULT_EXPIRATION_TIME
+    ) -> None:
         """Authenticate on UltraOCR.
 
         Authenticate on UltraOCR and save the token to use on future requests.
@@ -77,9 +103,12 @@ class Client:
         data = {
             "ClientID": client_id,
             "ClientSecret": client_secret,
+            "ExpiresIn": expires,
         }
 
         resp = requests.post(url, json=data, timeout=API_TIMEOUT)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
         self.token = resp.json()["token"]
 
     def send_job_single_step(
@@ -110,7 +139,7 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
-        url = f"{self.base_url}/job/send/{service}"
+        url = f"{self.base_url}/ocr/job/send/{service}"
         body = {
             **metadata,
             "data": file,
@@ -157,9 +186,11 @@ class Client:
                 }
             }
         """
-        url = f"{self.base_url}/{resource}/{service}"
+        url = f"{self.base_url}/ocr/{resource.value}/{service}"
 
         resp = self._post(url, json=metadata, params=params)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
         return resp.json()
 
     def get_batch_status(self, batch_id: str):
@@ -188,9 +219,11 @@ class Client:
                 "status": "done"
             }
         """
-        url = f"{self.base_url}/batch/status/{batch_id}"
+        url = f"{self.base_url}/ocr/batch/status/{batch_id}"
 
         resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
         return resp.json()
 
     def get_job_result(self, batch_id: str, job_id: str):
@@ -228,9 +261,11 @@ class Client:
                 "status": "done"
             }
         """
-        url = f"{self.base_url}/job/result/{batch_id}/{job_id}"
+        url = f"{self.base_url}/ocr/job/result/{batch_id}/{job_id}"
 
         resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
         return resp.json(), resp.status_code
 
     def send_job(
