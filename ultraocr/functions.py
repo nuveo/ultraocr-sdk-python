@@ -116,7 +116,7 @@ class Client:
             "data": file,
         }
 
-        if params and params.get("facematch") == "true":
+        if params and params.get("facematch") == "true":  #
             body.update("facematch", facematch_file)
 
         if params and params.get("extra-document") == "true":
@@ -496,7 +496,7 @@ class Client:
             res, code = self.get_batch_status(batch_id)
 
             status = res["status"]
-            if status == "done" or status == "error":
+            if status == "done" or status == "error":  #
                 break
 
             time.sleep(self.interval)
@@ -510,3 +510,44 @@ class Client:
                 self.wait_for_job_done(batch_id, job_id)
 
         return res, code
+
+    def get_jobs(self, start: str, end: str) -> list:
+        """Get jobs.
+
+        Get all created jobs in a time interval
+
+        Args:
+            start: The start time (in the format YYYY-MM-DD).
+            end: The end time (in the format YYYY-MM-DD).
+
+        Returns:
+            A list of jobs. For example:
+            [
+                {
+                    "created_at": "2021-01-01T00:00:00Z",
+                    "job_ksuid": "21eRubs77luzFr1GdJfHdddH6EA",
+                    "result": {},
+                    "service": "chn",
+                    "status": "done"
+                }
+            ],
+        """
+        url = f"{self.base_url}/ocr/job/results"
+        params = {
+            "startDate": start,
+            "endtDate": end,
+        }
+
+        jobs = []
+        has_next_page = True
+        while has_next_page:
+            resp = self._get(url, params=params)
+            res = resp.json()
+
+            jobs += res.get("jobs")
+            token = res.get("nextPageToken")
+
+            params.update("nextPageToken", token)
+
+            if not token:
+                has_next_page = False
