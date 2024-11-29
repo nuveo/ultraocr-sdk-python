@@ -18,11 +18,11 @@ class BearerAuth(requests.auth.AuthBase):
 def upload_file(url: str, file: str):
     """Upload file.
 
-    Open and upload file
+    Upload file given the content.
 
     Args:
         url: The url to upload the file.
-        file_path: The file path.
+        file: The file content.
 
     Returns:
         The request output.
@@ -32,9 +32,9 @@ def upload_file(url: str, file: str):
 
 
 def upload_file_with_path(url: str, file_path: str):
-    """Upload file.
+    """Upload file given a file path.
 
-    Open and upload file
+    Open and upload file given a file path.
 
     Args:
         url: The url to upload the file.
