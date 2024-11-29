@@ -160,8 +160,8 @@ class Client:
         self,
         service: str,
         file: str,
-        facematch_file: str,
-        extra_file: str,
+        facematch_file: str = "",
+        extra_file: str = "",
         metadata: dict = None,
         params: dict = None,
     ):
@@ -184,6 +184,9 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
+        if metadata is None:
+            metadata = {}
+
         url = f"{self.base_url}/ocr/job/send/{service}"
         body = {
             **metadata,
@@ -197,6 +200,8 @@ class Client:
             body.update("extra", extra_file)
 
         resp = self._post(url, json=body, params=params)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
         return resp.json()
 
     def get_batch_status(self, batch_id: str):
@@ -272,7 +277,7 @@ class Client:
         resp = self._get(url)
         validate_status_code(resp.status_code, HTTPStatus.OK)
 
-        return resp.json(), resp.status_code
+        return resp.json()
 
     def send_job(
         self,
@@ -381,6 +386,9 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
+        if params is None:
+            params = {}
+
         params = {
             **params,
             "base64": "true",
@@ -432,6 +440,9 @@ class Client:
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
         """
+        if params is None:
+            params = {}
+
         params = {
             **params,
             "base64": "true",
@@ -484,14 +495,13 @@ class Client:
             }
         """
         timeout_start = time.time()
-        code = None
         res = None
 
         while time.time() < timeout_start + self.timeout:
-            res, code = self.get_job_result(batch_id, job_id)
+            res = self.get_job_result(batch_id, job_id)
 
             status = res["status"]
-            if status == STATUS_DONE or status == STATUS_ERROR:
+            if status in [STATUS_DONE, STATUS_ERROR]:
                 break
 
             time.sleep(self.interval)
@@ -499,7 +509,7 @@ class Client:
         if time.time() > timeout_start + self.timeout:
             raise TimeoutException(self.timeout, res)
 
-        return res, code
+        return res
 
     def wait_for_batch_done(self, batch_id: str, wait_jobs: bool = True):
         """Wait the batch to be processed.
@@ -530,14 +540,13 @@ class Client:
             }
         """
         timeout_start = time.time()
-        code = None
         res = None
 
         while time.time() < timeout_start + self.timeout:
-            res, code = self.get_batch_status(batch_id)
+            res = self.get_batch_status(batch_id)
 
             status = res["status"]
-            if status == STATUS_DONE or status == STATUS_ERROR:
+            if status in [STATUS_DONE, STATUS_ERROR]:
                 break
 
             time.sleep(self.interval)
@@ -550,7 +559,7 @@ class Client:
                 job_id = job["job_ksuid"]
                 self.wait_for_job_done(batch_id, job_id)
 
-        return res, code
+        return res
 
     def get_jobs(self, start: str, end: str) -> list:
         """Get jobs.
