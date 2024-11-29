@@ -2,16 +2,22 @@ import requests
 import time
 from http import HTTPStatus
 from datetime import datetime, timedelta
-from ultraocr.helpers import BearerAuth, upload_file, validate_status_code
+from ultraocr.helpers import (
+    BearerAuth,
+    upload_file,
+    upload_file_with_path,
+    validate_status_code,
+)
 from ultraocr.exceptions import TimeoutException
 from ultraocr.constants import (
     Resource,
     POOLING_INTERVAL,
     API_TIMEOUT,
-    UPLOAD_TIMEOUT,
     BASE_URL,
     AUTH_BASE_URL,
     DEFAULT_EXPIRATION_TIME,
+    STATUS_DONE,
+    STATUS_ERROR,
 )
 
 
@@ -111,49 +117,6 @@ class Client:
 
         self.token = resp.json()["token"]
 
-    def send_job_single_step(
-        self,
-        service: str,
-        file: str,
-        facematch_file: str,
-        extra_file: str,
-        metadata: dict = None,
-        params: dict = None,
-    ):
-        """Send job in a single step on UltraOCR.
-
-        Send job in a single step on UltraOCR, it's faster than usual method,
-        but have a 6MB as body limit (including metadata and base64 file)
-
-        Args:
-            service: The the type of document to be send.
-            file: The file in base64 format.
-            metadata: The metadata based on UltraOCR Docs format, optional in most cases.
-            params: The query parameters based on UltraOCR Docs, optional in most cases.
-
-        Returns:
-            A json response containing the id and the status_url. For example:
-
-            {
-                "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
-                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
-            }
-        """
-        url = f"{self.base_url}/ocr/job/send/{service}"
-        body = {
-            **metadata,
-            "data": file,
-        }
-
-        if params and params.get("facematch") == "true":  #
-            body.update("facematch", facematch_file)
-
-        if params and params.get("extra-document") == "true":
-            body.update("extra", extra_file)
-
-        resp = self._post(url, json=body, params=params)
-        return resp.json()
-
     def generate_signed_url(
         self,
         service: str,
@@ -191,6 +154,49 @@ class Client:
         resp = self._post(url, json=metadata, params=params)
         validate_status_code(resp.status_code, HTTPStatus.OK)
 
+        return resp.json()
+
+    def send_job_single_step(
+        self,
+        service: str,
+        file: str,
+        facematch_file: str,
+        extra_file: str,
+        metadata: dict = None,
+        params: dict = None,
+    ):
+        """Send job in a single step on UltraOCR.
+
+        Send job in a single step on UltraOCR, it's faster than usual method,
+        but have a 6MB as body limit (including metadata and base64 file)
+
+        Args:
+            service: The the type of document to be send.
+            file: The file in base64 format.
+            metadata: The metadata based on UltraOCR Docs format, optional in most cases.
+            params: The query parameters based on UltraOCR Docs, optional in most cases.
+
+        Returns:
+            A json response containing the id and the status_url. For example:
+
+            {
+                "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
+                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
+            }
+        """
+        url = f"{self.base_url}/ocr/job/send/{service}"
+        body = {
+            **metadata,
+            "data": file,
+        }
+
+        if params and params.get("facematch") == "true":
+            body.update("facematch", facematch_file)
+
+        if params and params.get("extra-document") == "true":
+            body.update("extra", extra_file)
+
+        resp = self._post(url, json=body, params=params)
         return resp.json()
 
     def get_batch_status(self, batch_id: str):
@@ -303,15 +309,15 @@ class Client:
         }
 
         url = urls.get("document")
-        upload_file(url, file_path)
+        upload_file_with_path(url, file_path)
 
         if params and params.get("facematch") == "true":
             facematch_url = urls.get("selfie")
-            upload_file(facematch_url, facematch_file_path)
+            upload_file_with_path(facematch_url, facematch_file_path)
 
         if params and params.get("extra-document") == "true":
             extra_url = urls.get("extra_document")
-            upload_file(extra_url, extra_file_path)
+            upload_file_with_path(extra_url, extra_file_path)
 
         return job_data
 
@@ -343,7 +349,7 @@ class Client:
             "status_url": res.get("status_url"),
         }
 
-        upload_file(url, file_path)
+        upload_file_with_path(url, file_path)
 
         return batch_data
 
@@ -388,15 +394,15 @@ class Client:
         }
 
         url = urls.get("document")
-        requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
+        upload_file(url, file)
 
         if params and params.get("facematch") == "true":
             facematch_url = urls.get("selfie")
-            requests.put(facematch_url, data=facematch_file, timeout=UPLOAD_TIMEOUT)
+            upload_file(facematch_url, facematch_file)
 
         if params and params.get("extra-document") == "true":
             extra_url = urls.get("extra_document")
-            requests.put(extra_url, data=extra_file, timeout=UPLOAD_TIMEOUT)
+            upload_file(extra_url, extra_file)
 
         return job_data
 
@@ -438,7 +444,7 @@ class Client:
             "status_url": res.get("status_url"),
         }
 
-        requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
+        upload_file(url, file)
 
         return batch_data
 
@@ -485,7 +491,7 @@ class Client:
             res, code = self.get_job_result(batch_id, job_id)
 
             status = res["status"]
-            if status == "done" or status == "error":
+            if status == STATUS_DONE or status == STATUS_ERROR:
                 break
 
             time.sleep(self.interval)
@@ -531,7 +537,7 @@ class Client:
             res, code = self.get_batch_status(batch_id)
 
             status = res["status"]
-            if status == "done" or status == "error":  #
+            if status == STATUS_DONE or status == STATUS_ERROR:
                 break
 
             time.sleep(self.interval)

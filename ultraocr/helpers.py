@@ -1,6 +1,7 @@
 import requests
 from ultraocr.constants import UPLOAD_TIMEOUT
 from ultraocr.exceptions import InvalidStatusCodeException
+from http import HTTPStatus
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -14,7 +15,23 @@ class BearerAuth(requests.auth.AuthBase):
         return r
 
 
-def upload_file(url: str, file_path: str):
+def upload_file(url: str, file: str):
+    """Upload file.
+
+    Open and upload file
+
+    Args:
+        url: The url to upload the file.
+        file_path: The file path.
+
+    Returns:
+        The request output.
+    """
+    resp = requests.put(url, data=file, timeout=UPLOAD_TIMEOUT)
+    validate_status_code(resp.status_code, HTTPStatus.OK)
+
+
+def upload_file_with_path(url: str, file_path: str):
     """Upload file.
 
     Open and upload file
@@ -29,7 +46,8 @@ def upload_file(url: str, file_path: str):
     with open(file_path, "rb") as file_bin:
         data = file_bin.read()
 
-    return requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
+    resp = requests.put(url, data=data, timeout=UPLOAD_TIMEOUT)
+    validate_status_code(resp.status_code, HTTPStatus.OK)
 
 
 def validate_status_code(status: int, want: int):
