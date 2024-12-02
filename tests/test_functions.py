@@ -690,3 +690,320 @@ def test_wait_for_job_done_timeout():
     unittest.TestCase().assertRaises(
         TimeoutException, c.wait_for_job_done, "123", "234"
     )
+
+
+@responses.activate
+def test_create_and_wait_batch():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/batch/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/status/123",
+        json={
+            "batch_ksuid": "123",
+            "jobs": [],
+            "service": "rg",
+            "status": "done",
+        },
+        status=200,
+    )
+
+    c = Client()
+    res = c.create_and_wait_batch("rg", "./requirements.txt")
+
+    assert res.get("batch_ksuid")
+    assert res.get("service")
+    assert res.get("status")
+
+    assert res.get("batch_ksuid") == "123"
+    assert res.get("service") == "rg"
+    assert res.get("status") == "done"
+
+
+@responses.activate
+def test_create_and_wait_batch_with_jobs():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/batch/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/status/123",
+        json={
+            "batch_ksuid": "123",
+            "jobs": [{"job_ksuid": "234"}],
+            "service": "rg",
+            "status": "done",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/result/123/234",
+        json={
+            "status": "done",
+        },
+        status=200,
+    )
+
+    c = Client()
+    res = c.create_and_wait_batch("rg", "./requirements.txt")
+
+    assert res.get("batch_ksuid")
+    assert res.get("service")
+    assert res.get("status")
+
+    assert res.get("batch_ksuid") == "123"
+    assert res.get("service") == "rg"
+    assert res.get("status") == "done"
+
+
+@responses.activate
+def test_create_and_wait_batch_unauthorized():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/batch/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/status/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.create_and_wait_batch, "rg", "./requirements.txt"
+    )
+
+
+@responses.activate
+def test_create_and_wait_batch_timeout():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/batch/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/status/123",
+        json={
+            "batch_ksuid": "123",
+            "service": "rg",
+            "status": "processing",
+        },
+        status=200,
+    )
+
+    c = Client(timeout=1)
+    unittest.TestCase().assertRaises(
+        TimeoutException, c.create_and_wait_batch, "rg", "./requirements.txt"
+    )
+
+
+@responses.activate
+def test_create_and_wait_batch_timeout_job():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/batch/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/status/123",
+        json={
+            "batch_ksuid": "123",
+            "jobs": [{"job_ksuid": "234"}],
+            "service": "rg",
+            "status": "done",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/result/123/234",
+        json={
+            "status": "processing",
+        },
+        status=200,
+    )
+
+    c = Client(timeout=1)
+    unittest.TestCase().assertRaises(
+        TimeoutException, c.create_and_wait_batch, "rg", "./requirements.txt"
+    )
+
+
+@responses.activate
+def test_create_and_wait_job():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/job/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/result/123/123",
+        json={
+            "job_ksuid": "123",
+            "status": "done",
+            "service": "rg",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    c = Client()
+    res = c.create_and_wait_job("rg", "./requirements.txt")
+
+    assert res.get("job_ksuid")
+    assert res.get("service")
+    assert res.get("status")
+
+    assert res.get("job_ksuid") == "123"
+    assert res.get("service") == "rg"
+    assert res.get("status") == "done"
+
+
+@responses.activate
+def test_create_and_wait_job_unauthorized():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/job/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/result/123/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.create_and_wait_job, "rg", "./requirements.txt"
+    )
+
+
+@responses.activate
+def test_create_and_wait_job_timeout():
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/ocr/job/rg",
+        json={
+            "urls": {"document": "https://test2.com"},
+            "id": "123",
+            "status_url": "https://test.com",
+        },
+        status=200,
+    )
+
+    responses.add(
+        responses.PUT,
+        "https://test2.com",
+        status=200,
+    )
+
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/result/123/123",
+        json={
+            "job_ksuid": "123",
+            "service": "rg",
+            "status": "processing",
+        },
+        status=200,
+    )
+
+    c = Client(timeout=1)
+    unittest.TestCase().assertRaises(
+        TimeoutException, c.create_and_wait_job, "rg", "./requirements.txt"
+    )

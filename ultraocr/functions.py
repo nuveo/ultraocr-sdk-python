@@ -173,6 +173,8 @@ class Client:
         Args:
             service: The the type of document to be send.
             file: The file in base64 format.
+            facematch_file: The facematch file in base64 format.
+            extra_file: The extra file in base64 format.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
 
@@ -295,6 +297,8 @@ class Client:
         Args:
             service: The the type of document to be send.
             file_path: The file path of the document.
+            facematch_file_path: The facematch file path of the document.
+            extra_file_path: The extra file path of the document.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
 
@@ -375,6 +379,8 @@ class Client:
         Args:
             service: The the type of document to be send.
             file: The file on base64 format.
+            facematch_file: The facematch file in base64 format.
+            extra_file: The extra file in base64 format.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
 
@@ -601,3 +607,103 @@ class Client:
 
             if not token:
                 has_next_page = False
+
+    def create_and_wait_job(
+        self,
+        service: str,
+        file_path: str,
+        facematch_file_path: str = "",
+        extra_file_path: str = "",
+        metadata: dict = None,
+        params: dict = None,
+    ):
+        """Create and wait job.
+
+        Create the job and wait for job done.
+
+        Args:
+            service: The the type of document to be send.
+            file_path: The file path of the document.
+            facematch_file_path: The facematch file path of the document.
+            extra_file_path: The extra file path of the document.
+            metadata: The metadata based on UltraOCR Docs format, optional in most cases.
+            params: The query parameters based on UltraOCR Docs, optional in most cases.
+
+        Returns:
+            A json response containing the client data (if given on job creation), id, creation
+            time, service, status (may be "waiting", "error", "processing", "validating" or "done")
+            and the result or error depending on the status. For example:
+            {
+                "client_data": { },
+                "created_at": "2022-06-22T20:58:09Z",
+                "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "result": {
+                    "Time": "7.45",
+                    "Document": [
+                        {
+                            "Page": 1,
+                            "Data": {
+                                "DocumentType": {
+                                    "conf": 99,
+                                    "value": "CNH"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "service": "idtypification",
+                "status": "done"
+            }
+        """
+
+        res = self.send_job(
+            service, file_path, facematch_file_path, extra_file_path, metadata, params
+        )
+
+        job_id = res.get("id")
+
+        return self.wait_for_job_done(job_id, job_id)
+
+    def create_and_wait_batch(
+        self,
+        service: str,
+        file_path: str,
+        metadata: dict = None,
+        params: dict = None,
+        wait_jobs: bool = True,
+    ):
+        """Create and wait batch.
+
+        Create the batch and wait for batch done.
+
+        Args:
+            service: The the type of document to be send.
+            file_path: The file path of the document.
+            metadata: The metadata based on UltraOCR Docs format, optional in most cases.
+            params: The query parameters based on UltraOCR Docs, optional in most cases.
+            wait_jobs: Indicate if must wait the jobs to be processed.
+
+        Returns:
+            A json response containing the id, creation time, batch's jobs info, service and
+            status (may be "waiting", "error", "processing" or "done"). For example:
+            {
+                "batch_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "created_at": "2022-06-22T20:58:09Z",
+                "jobs": [
+                    {
+                        "created_at": "2022-06-22T20:58:09Z",
+                        "job_ksuid": "0ujsszwN8NRY24YaXiTIE2VWDTS",
+                        "result_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/2AwrSd7bxEMbPrQ5jZHGDzQ4qL3/0ujsszwN8NRY24YaXiTIE2VWDTS",
+                        "status": "processing"
+                    }
+                ],
+                "service": "cnh",
+                "status": "done"
+            }
+        """
+
+        res = self.send_batch(service, file_path, metadata, params)
+
+        batch_id = res.get("id")
+
+        return self.wait_for_batch_done(batch_id, wait_jobs)
