@@ -2,7 +2,7 @@ name: Validation
 on: [pull_request]
  
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -11,4 +11,6 @@ jobs:
         with:
           python-version: '3.12'
       - name: Run tests
-        run: python setup.py pytest
+        run: |
+          pip install -U setuptools
+          python setup.py pytest
