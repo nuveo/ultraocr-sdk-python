@@ -1,5 +1,6 @@
-from enum import Enum
+""" Module providing UltraOCR SDK constants """
 
+from enum import Enum
 
 POOLING_INTERVAL = 1
 API_TIMEOUT = 30

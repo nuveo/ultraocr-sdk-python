@@ -1,3 +1,6 @@
+""" Module providing the UltraOCR SDK exceptions """
+
+
 class TimeoutException(Exception):
     """Timeout exception"""
 

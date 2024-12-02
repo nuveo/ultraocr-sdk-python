@@ -1,7 +1,11 @@
+""" Module providing some functions to help """
+
+from http import HTTPStatus
+
 import requests
+
 from ultraocr.constants import UPLOAD_TIMEOUT
 from ultraocr.exceptions import InvalidStatusCodeException
-from http import HTTPStatus
 
 
 class BearerAuth(requests.auth.AuthBase):

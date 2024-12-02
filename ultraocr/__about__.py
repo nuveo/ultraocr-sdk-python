@@ -1,1 +1,3 @@
-__version__ = "0.0.1"
+""" Module providing the UltraOCR SDK version """
+
+__version__ = "0.1.0"

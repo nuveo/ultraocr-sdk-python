@@ -1,7 +1,11 @@
-import requests
+""" Module providing the UltraOCR Client and functions """
+
 import time
 from http import HTTPStatus
 from datetime import datetime, timedelta
+
+import requests
+
 from ultraocr.helpers import (
     BearerAuth,
     upload_file,
@@ -104,6 +108,9 @@ class Client:
         Args:
             client_id: The Client ID generated on Web Interface.
             client_secret: The Client Secret generated on Web Interface.
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         url = f"{self.auth_base_url}/token"
         data = {
@@ -148,6 +155,9 @@ class Client:
                     "extra_document": "https://presignedurldemo.s3.eu-west-2.amazonaws.com/image.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJJWZ7B6WCRGMKFGQ%2F20180210%2Feu-west-2%2Fs3%2Faws4_request&X-Amz-Date=20180210T171315Z&X-Amz-Expires=1800&X-Amz-Signature=12b74b0788aa036bc7c3d03b3f20c61f1f91cc9ad8873e3314255dc479a25351&X-Amz-SignedHeaders=host"
                 }
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         url = f"{self.base_url}/ocr/{resource.value}/{service}"
 
@@ -185,6 +195,9 @@ class Client:
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         if metadata is None:
             metadata = {}
@@ -202,81 +215,6 @@ class Client:
             body.update("extra", extra_file)
 
         resp = self._post(url, json=body, params=params)
-        validate_status_code(resp.status_code, HTTPStatus.OK)
-
-        return resp.json()
-
-    def get_batch_status(self, batch_id: str):
-        """Get document batch status.
-
-        Get the status of the batch, checking whether it was processed or not.
-
-        Args:
-            batch_id: The id of the batch, given on batch creation.
-
-        Returns:
-            A json response containing the id, creation time, batch's jobs info, service and
-            status (may be "waiting", "error", "processing" or "done"). For example:
-            {
-                "batch_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
-                "created_at": "2022-06-22T20:58:09Z",
-                "jobs": [
-                    {
-                        "created_at": "2022-06-22T20:58:09Z",
-                        "job_ksuid": "0ujsszwN8NRY24YaXiTIE2VWDTS",
-                        "result_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/2AwrSd7bxEMbPrQ5jZHGDzQ4qL3/0ujsszwN8NRY24YaXiTIE2VWDTS",
-                        "status": "processing"
-                    }
-                ],
-                "service": "cnh",
-                "status": "done"
-            }
-        """
-        url = f"{self.base_url}/ocr/batch/status/{batch_id}"
-
-        resp = self._get(url)
-        validate_status_code(resp.status_code, HTTPStatus.OK)
-
-        return resp.json()
-
-    def get_job_result(self, batch_id: str, job_id: str):
-        """Get job result.
-
-        Get the status and result of the job if it's already processed.
-
-        Args:
-            batch_id: The id of the batch, given on batch creation(repeat the job_id if batch wasn't created).
-            job_id: The id of the job, given on job creation or on batch status.
-
-        Returns:
-            A json response containing the client data (if given on job creation), id, creation
-            time, service, status (may be "waiting", "error", "processing", "validating" or "done")
-            and the result or error depending on the status. For example:
-            {
-                "client_data": { },
-                "created_at": "2022-06-22T20:58:09Z",
-                "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
-                "result": {
-                    "Time": "7.45",
-                    "Document": [
-                        {
-                            "Page": 1,
-                            "Data": {
-                                "DocumentType": {
-                                    "conf": 99,
-                                    "value": "CNH"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "service": "idtypification",
-                "status": "done"
-            }
-        """
-        url = f"{self.base_url}/ocr/job/result/{batch_id}/{job_id}"
-
-        resp = self._get(url)
         validate_status_code(resp.status_code, HTTPStatus.OK)
 
         return resp.json()
@@ -309,6 +247,9 @@ class Client:
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         res = self.generate_signed_url(service, metadata, params, Resource.JOB)
         urls = res.get("urls", {})
@@ -350,6 +291,9 @@ class Client:
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         res = self.generate_signed_url(service, metadata, params, Resource.BATCH)
         url = res.get("urls", {}).get("document")
@@ -391,6 +335,9 @@ class Client:
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         if params is None:
             params = {}
@@ -445,6 +392,9 @@ class Client:
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
                 "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
         """
         if params is None:
             params = {}
@@ -464,6 +414,87 @@ class Client:
         upload_file(url, file)
 
         return batch_data
+
+    def get_batch_status(self, batch_id: str):
+        """Get document batch status.
+
+        Get the status of the batch, checking whether it was processed or not.
+
+        Args:
+            batch_id: The id of the batch, given on batch creation.
+
+        Returns:
+            A json response containing the id, creation time, batch's jobs info, service and
+            status (may be "waiting", "error", "processing" or "done"). For example:
+            {
+                "batch_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "created_at": "2022-06-22T20:58:09Z",
+                "jobs": [
+                    {
+                        "created_at": "2022-06-22T20:58:09Z",
+                        "job_ksuid": "0ujsszwN8NRY24YaXiTIE2VWDTS",
+                        "result_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/2AwrSd7bxEMbPrQ5jZHGDzQ4qL3/0ujsszwN8NRY24YaXiTIE2VWDTS",
+                        "status": "processing"
+                    }
+                ],
+                "service": "cnh",
+                "status": "done"
+            }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        url = f"{self.base_url}/ocr/batch/status/{batch_id}"
+
+        resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
+        return resp.json()
+
+    def get_job_result(self, batch_id: str, job_id: str):
+        """Get job result.
+
+        Get the status and result of the job if it's already processed.
+
+        Args:
+            batch_id: The id of the batch, given on batch creation(repeat the job_id if batch wasn't created).
+            job_id: The id of the job, given on job creation or on batch status.
+
+        Returns:
+            A json response containing the client data (if given on job creation), id, creation
+            time, service, status (may be "waiting", "error", "processing", "validating" or "done")
+            and the result or error depending on the status. For example:
+            {
+                "client_data": { },
+                "created_at": "2022-06-22T20:58:09Z",
+                "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "result": {
+                    "Time": "7.45",
+                    "Document": [
+                        {
+                            "Page": 1,
+                            "Data": {
+                                "DocumentType": {
+                                    "conf": 99,
+                                    "value": "CNH"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "service": "idtypification",
+                "status": "done"
+            }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        url = f"{self.base_url}/ocr/job/result/{batch_id}/{job_id}"
+
+        resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
+        return resp.json()
 
     def wait_for_job_done(self, batch_id: str, job_id: str):
         """Wait the job to be processed.
@@ -499,6 +530,10 @@ class Client:
                 "service": "idtypification",
                 "status": "done"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+            TimeoutException: If wait time exceed the limit.
         """
         timeout_start = time.time()
         res = None
@@ -544,6 +579,10 @@ class Client:
                 "service": "cnh",
                 "status": "done"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+            TimeoutException: If wait time exceed the limit.
         """
         timeout_start = time.time()
         res = None
@@ -587,6 +626,10 @@ class Client:
                     "status": "done"
                 }
             ],
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+            TimeoutException: If wait time exceed the limit.
         """
         url = f"{self.base_url}/ocr/job/results"
         params = {
@@ -654,6 +697,10 @@ class Client:
                 "service": "idtypification",
                 "status": "done"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+            TimeoutException: If wait time exceed the limit.
         """
 
         res = self.send_job(
@@ -700,6 +747,10 @@ class Client:
                 "service": "cnh",
                 "status": "done"
             }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+            TimeoutException: If wait time exceed the limit.
         """
 
         res = self.send_batch(service, file_path, metadata, params)
