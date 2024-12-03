@@ -31,6 +31,18 @@ class Client:
     Client to help on UltraOCR usage. For more details about all arguments and returns,
     access the oficial system documentation on https://docs.nuveo.ai/ocr/v2/.
 
+    Attributes:
+        client_id: The Client ID to generate token (only if auto_refresh=True).
+        client_secret: The Client Secret to generate token (only if auto_refresh=True).
+        token_expires: The token expiration time (only if auto_refresh=True).
+        auto_refresh: Indicates that the token will be auto generated (with client_id, client_secret and token_expires parameters).
+        auth_base_url: The base url to authenticate.
+        base_url: The base url to send documents.
+        timeout: The pooling timeout.
+        interval: The pooling interval.
+        expires_at: The authentication token expires datetime.
+        token: The authentication token.
+
     """
 
     def __init__(
@@ -44,6 +56,18 @@ class Client:
         timeout: int = API_TIMEOUT,
         interval: int = POOLING_INTERVAL,
     ):
+        """Initializes the instance based on preferences.
+
+        Args:
+            client_id: The Client ID to generate token (only if auto_refresh=True).
+            client_secret: The Client Secret to generate token (only if auto_refresh=True).
+            token_expires: The token expiration time (only if auto_refresh=True) (Default 60).
+            auto_refresh: Indicates that the token will be auto generated (with client_id, client_secret and token_expires parameters) (Default False).
+            auth_base_url: The base url to authenticate (Default official UltraOCR URL).
+            base_url: The base url to send documents (Default official UltraOCR URL).
+            timeout: The pooling timeout in seconds (Default 30).
+            interval: The pooling interval in seconds (Default 1).
+        """
         self.auth_base_url = auth_base_url
         self.base_url = base_url
         self.timeout = timeout
@@ -90,13 +114,9 @@ class Client:
             timeout=timeout,
         )
 
-    def _authenticate(self) -> None:
-        self.authenticate(self.client_id, self.client_secret, self.expires)
-        self.expires_at = datetime.now() + timedelta(minutes=self.expires)
-
     def _auto_authenticate(self) -> None:
         if self.auto_refresh and datetime.now() > self.expires_at:
-            self._authenticate()
+            self.authenticate(self.client_id, self.client_secret, self.expires)
 
     def authenticate(
         self, client_id: str, client_secret: str, expires: int = DEFAULT_EXPIRATION_TIME
@@ -108,6 +128,7 @@ class Client:
         Args:
             client_id: The Client ID generated on Web Interface.
             client_secret: The Client Secret generated on Web Interface.
+            expires: The token expires time in minutes (Default 60).
 
         Raises:
             InvalidStatusCodeException: If status code is not 200.
@@ -123,6 +144,7 @@ class Client:
         validate_status_code(resp.status_code, HTTPStatus.OK)
 
         self.token = resp.json()["token"]
+        self.expires_at = datetime.now() + timedelta(minutes=expires)
 
     def generate_signed_url(
         self,
@@ -139,7 +161,7 @@ class Client:
             service: The the type of document to be send.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
-            resource: The way to process, whether job or batch.
+            resource: The way to process, whether job or batch (Default job).
 
         Returns:
             A json response containing the id, status_url, urls to upload (only "document"if you're
@@ -728,7 +750,7 @@ class Client:
             file_path: The file path of the document.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
-            wait_jobs: Indicate if must wait the jobs to be processed.
+            wait_jobs: Indicate if must wait the jobs to be processed (Default True).
 
         Returns:
             A json response containing the id, creation time, batch's jobs info, service and
