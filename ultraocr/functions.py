@@ -311,7 +311,7 @@ class Client:
 
             {
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
-                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
+                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/batch/status/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
 
         Raises:
@@ -412,7 +412,7 @@ class Client:
 
             {
                 "id": "0ujsszwN8NRY24YaXiTIE2VWDTS",
-                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/job/result/0ujsszwN8NRY24YaXiTIE2VWDTS"
+                "status_url": "https://ultraocr.apis.nuveo.ai/v2/ocr/batch/status/0ujsszwN8NRY24YaXiTIE2VWDTS"
             }
 
         Raises:
