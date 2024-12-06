@@ -226,7 +226,7 @@ class Client:
 
         url = f"{self.base_url}/ocr/job/send/{service}"
         body = {
-            **metadata,
+            "metadata": metadata,
             "data": file,
         }
 
