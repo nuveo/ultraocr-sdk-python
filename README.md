@@ -234,3 +234,65 @@ client.create_and_wait_batch(service="SERVICE", file_path="YOUR_FILE_PATH")
 ```
 
 The `create_and_wait_job` has the `send_job` arguments and `get_job_result` response, while the `create_and_wait_batch` has the `send_batch` arguments and `get_batch_status` response. 
+
+### Get many results
+
+You can get all jobs in a given interval by calling `get_jobs` utility:
+
+```go
+client.get_jobs("START_DATE", "END_DATE") // Dates in YYYY-MM-DD format
+```
+
+Results:
+
+```json
+[
+    {
+        "created_at": "2022-06-22T20:58:09Z",
+        "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+        "result": {
+            "Time": "7.45",
+            "Document": [
+                {
+                    "Page": 1,
+                    "Data": {
+                        "DocumentType": {
+                            "conf": 99,
+                            "value": "CNH"
+                        }
+                    }
+                }
+            ]
+        },
+        "service": "idtypification",
+        "status": "done"
+    },
+    {
+        "created_at": "2022-06-22T20:59:09Z",
+        "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL4",
+        "result": {
+            "Time": "8.45",
+            "Document": [
+                {
+                    "Page": 1,
+                    "Data": {
+                        "DocumentType": {
+                            "conf": 99,
+                            "value": "CNH"
+                        }
+                    }
+                }
+            ]
+        },
+        "service": "cnh",
+        "status": "done"
+    },
+    {
+        "created_at": "2022-06-22T20:59:39Z",
+        "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL5",
+        "service": "cnh",
+        "status": "processing"
+    }
+]
+
+```
