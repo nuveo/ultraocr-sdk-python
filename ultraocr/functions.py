@@ -673,6 +673,8 @@ class Client:
             if not token:
                 has_next_page = False
 
+        return jobs
+
     def create_and_wait_job(
         self,
         service: str,
