@@ -158,7 +158,7 @@ class Client:
         Generate signed url to send the document to be processed by the AI.
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
             resource: The way to process, whether job or batch (Default job).
@@ -203,7 +203,7 @@ class Client:
         but have a 6MB as body limit (including metadata and base64 file)
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file: The file in base64 format.
             facematch_file: The facematch file in base64 format.
             extra_file: The extra file in base64 format.
@@ -255,7 +255,7 @@ class Client:
         Create and upload a job.
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file_path: The file path of the document.
             facematch_file_path: The facematch file path of the document.
             extra_file_path: The extra file path of the document.
@@ -301,7 +301,7 @@ class Client:
         Create and upload a batch.
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file_path: The file path of the document.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
@@ -343,7 +343,7 @@ class Client:
         the file to base64 format).
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file: The file on base64 format.
             facematch_file: The facematch file in base64 format.
             extra_file: The extra file in base64 format.
@@ -402,7 +402,7 @@ class Client:
         the file to base64 format).
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file: The file on base64 format.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
@@ -581,7 +581,7 @@ class Client:
         given on Client creation.
 
         Args:
-            batch_id: The id of the batch, given on batch creation(repeat the job_id if batch wasn't created).
+            batch_id: The id of the batch, given on batch creation.
             wait_jobs: Indicate if must wait the jobs to be processed.
 
         Returns:
@@ -689,7 +689,7 @@ class Client:
         Create the job and wait for job done.
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file_path: The file path of the document.
             facematch_file_path: The facematch file path of the document.
             extra_file_path: The extra file path of the document.
@@ -748,7 +748,7 @@ class Client:
         Create the batch and wait for batch done.
 
         Args:
-            service: The the type of document to be send.
+            service: The the type of document to be sent.
             file_path: The file path of the document.
             metadata: The metadata based on UltraOCR Docs format, optional in most cases.
             params: The query parameters based on UltraOCR Docs, optional in most cases.
