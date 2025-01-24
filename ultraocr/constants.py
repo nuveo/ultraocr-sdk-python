@@ -10,6 +10,9 @@ BASE_URL = "https://ultraocr.apis.nuveo.ai/v2"
 AUTH_BASE_URL = "https://auth.apis.nuveo.ai/v2"
 STATUS_DONE = "done"
 STATUS_ERROR = "error"
+KEY_FACEMATCH = "facematch"
+KEY_EXTRA = "extra-document"
+FLAG_TRUE = "true"
 
 
 class Resource(Enum):

@@ -22,6 +22,9 @@ from ultraocr.constants import (
     DEFAULT_EXPIRATION_TIME,
     STATUS_DONE,
     STATUS_ERROR,
+    FLAG_TRUE,
+    KEY_EXTRA,
+    KEY_FACEMATCH,
 )
 
 
@@ -230,10 +233,10 @@ class Client:
             "data": file,
         }
 
-        if params and params.get("facematch") == "true":
-            body.update("facematch", facematch_file)
+        if params and params.get(KEY_FACEMATCH) == FLAG_TRUE:
+            body.update(KEY_FACEMATCH, facematch_file)
 
-        if params and params.get("extra-document") == "true":
+        if params and params.get(KEY_EXTRA) == FLAG_TRUE:
             body.update("extra", extra_file)
 
         resp = self._post(url, json=body, params=params)
@@ -283,18 +286,18 @@ class Client:
         url = urls.get("document")
         upload_file_with_path(url, file_path)
 
-        if params and params.get("facematch") == "true":
+        if params and params.get(KEY_FACEMATCH) == FLAG_TRUE:
             facematch_url = urls.get("selfie")
             upload_file_with_path(facematch_url, facematch_file_path)
 
-        if params and params.get("extra-document") == "true":
+        if params and params.get(KEY_EXTRA) == FLAG_TRUE:
             extra_url = urls.get("extra_document")
             upload_file_with_path(extra_url, extra_file_path)
 
         return job_data
 
     def send_batch(
-        self, service: str, file_path: str, metadata: dict = None, params: dict = None
+        self, service: str, file_path: str, metadata: list[dict] = None, params: dict = None
     ):
         """Send batch.
 
@@ -366,7 +369,7 @@ class Client:
 
         params = {
             **params,
-            "base64": "true",
+            "base64": FLAG_TRUE,
         }
 
         res = self.generate_signed_url(service, metadata, params, Resource.JOB)
@@ -379,11 +382,11 @@ class Client:
         url = urls.get("document")
         upload_file(url, file)
 
-        if params and params.get("facematch") == "true":
+        if params and params.get(KEY_FACEMATCH) == FLAG_TRUE:
             facematch_url = urls.get("selfie")
             upload_file(facematch_url, facematch_file)
 
-        if params and params.get("extra-document") == "true":
+        if params and params.get(KEY_EXTRA) == FLAG_TRUE:
             extra_url = urls.get("extra_document")
             upload_file(extra_url, extra_file)
 
@@ -393,7 +396,7 @@ class Client:
         self,
         service: str,
         file: str,
-        metadata: dict = None,
+        metadata: list[dict] = None,
         params: dict = None,
     ):
         """Send batch on base64.
@@ -423,7 +426,7 @@ class Client:
 
         params = {
             **params,
-            "base64": "true",
+            "base64": FLAG_TRUE,
         }
 
         res = self.generate_signed_url(service, metadata, params, Resource.BATCH)
@@ -739,7 +742,7 @@ class Client:
         self,
         service: str,
         file_path: str,
-        metadata: dict = None,
+        metadata: list[dict] = None,
         params: dict = None,
         wait_jobs: bool = True,
     ):
