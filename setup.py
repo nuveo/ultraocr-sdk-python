@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="ultraocr-sdk-python",
     packages=["ultraocr"],
-    version="1.0.0",
+    version="1.0.1",
     description="UltraOCR Python SDK",
     author="Nuveo",
     install_requires=["requests"],
