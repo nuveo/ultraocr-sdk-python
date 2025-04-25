@@ -105,7 +105,7 @@ params = {
     "facematch": "true"
 }
 
-client.send_job("cnh", "FILE_PATH", facematch_file_path="FACEMATCH_FILE_PATH", extra_file_path="EXTRA_FILE_PATH", params=params)
+client.send_job("SERVICE", "FILE_PATH", facematch_file_path="FACEMATCH_FILE_PATH", extra_file_path="EXTRA_FILE_PATH", params=params)
 client.send_job_base64("SERVICE", "BASE64_DATA", facematch_file="FACEMATCH_BASE64_DATA", extra_file="EXTRA_BASE64_DATA", params=params)
 client.send_job_single_step("SERVICE", "BASE64_DATA", facematch_file="FACEMATCH_BASE64_DATA", extra_file="EXTRA_BASE64_DATA", params=params)
 ```
@@ -239,8 +239,8 @@ The `create_and_wait_job` has the `send_job` arguments and `get_job_result` resp
 
 You can get all jobs in a given interval by calling `get_jobs` utility:
 
-```go
-client.get_jobs("START_DATE", "END_DATE") // Dates in YYYY-MM-DD format
+```python
+client.get_jobs("START_DATE", "END_DATE") # Dates in YYYY-MM-DD format
 ```
 
 Results:
