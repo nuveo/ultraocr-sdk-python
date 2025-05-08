@@ -1007,3 +1007,158 @@ def test_create_and_wait_job_timeout():
     unittest.TestCase().assertRaises(
         TimeoutException, c.create_and_wait_job, "rg", "./requirements.txt"
     )
+
+@responses.activate
+def test_get_batch_info():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/info/123",
+        json={
+            "company_id": "1234",
+            "client_id": "12345",
+            "batch_id": "123",
+            "created_at": "2022-06-22T20:58:09Z",
+            "service": "rg",
+            "status": "processing",
+            "source": "API",
+            "total_jobs": 3,
+            "total_processed": 2,
+        },
+        status=200,
+    )
+
+    c = Client()
+    res = c.get_batch_info("123")
+
+    assert res.get("batch_id")
+    assert res.get("service")
+    assert res.get("client_id")
+    assert res.get("status")
+
+    assert res.get("batch_id") == "123"
+    assert res.get("client_id") == "12345"
+    assert res.get("service") == "rg"
+    assert res.get("status") == "processing"
+
+
+@responses.activate
+def test_get_batch_info_unauthorized():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/info/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.get_batch_info, "123"
+    )
+
+@responses.activate
+def test_get_job_info():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/info/123",
+        json={
+            "client_id": "12345",
+            "job_id": "123",
+            "service": "rg",
+            "status": "processing",
+        },
+        status=200,
+    )
+
+    c = Client()
+    res = c.get_job_info("123")
+
+    assert res.get("job_id")
+    assert res.get("service")
+    assert res.get("client_id")
+    assert res.get("status")
+
+    assert res.get("job_id") == "123"
+    assert res.get("client_id") == "12345"
+    assert res.get("service") == "rg"
+    assert res.get("status") == "processing"
+
+
+@responses.activate
+def test_get_job_info_unauthorized():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/job/info/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.get_job_info, "123"
+    )
+
+@responses.activate
+def test_get_batch_result():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/result/123",
+        json=[
+            {
+                "job_ksuid": "123",
+                "service": "rg",
+                "status": "processing",
+            },
+        ],
+        status=200,
+    )
+
+    c = Client()
+    res = c.get_batch_result("123")
+
+    assert res
+    assert len(res) == 1
+
+@responses.activate
+def test_get_batch_result_unauthorized():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/result/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.get_batch_result, "123"
+    )
+
+@responses.activate
+def test_get_batch_result_storage():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/result/123",
+        json={
+            "exp": "60000",
+            "url": "https://presignedurldemo.s3.eu-west-2.amazonaws.com/image.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJJWZ7B6WCRGMKFGQ%2F20180210%2Feu-west-2%2Fs3%2Faws4_request&X-Amz-Date=20180210T171315Z&X-Amz-Expires=1800&X-Amz-Signature=12b74b0788aa036bc7c3d03b3f20c61f1f91cc9ad8873e3314255dc479a25351&X-Amz-SignedHeaders=host"
+        },
+        status=200,
+    )
+
+    c = Client()
+    res = c.get_batch_result_storage("123")
+
+    assert res.get("exp")
+    assert res.get("url")
+
+    assert res.get("exp") == "60000"
+
+
+@responses.activate
+def test_get_batch_result_storage_unauthorized():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ocr/batch/result/123",
+        status=401,
+    )
+
+    c = Client()
+    unittest.TestCase().assertRaises(
+        InvalidStatusCodeException, c.get_batch_result_storage, "123"
+    )

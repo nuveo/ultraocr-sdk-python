@@ -25,6 +25,8 @@ from ultraocr.constants import (
     FLAG_TRUE,
     KEY_EXTRA,
     KEY_FACEMATCH,
+    RETURN_REQUEST,
+    RETURN_STORAGE,
 )
 
 
@@ -120,6 +122,14 @@ class Client:
     def _auto_authenticate(self) -> None:
         if self.auto_refresh and datetime.now() > self.expires_at:
             self.authenticate(self.client_id, self.client_secret, self.expires)
+
+    def _get_batch_result(self, batch_id: str, params: dict = None):
+        url = f"{self.base_url}/ocr/batch/result/{batch_id}"
+
+        resp = self._get(url, params=params)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
+        return resp.json()
 
     def authenticate(
         self, client_id: str, client_secret: str, expires: int = DEFAULT_EXPIRATION_TIME
@@ -785,3 +795,161 @@ class Client:
         batch_id = res.get("id")
 
         return self.wait_for_batch_done(batch_id, wait_jobs)
+
+    def get_job_info(self, job_id: str):
+        """Get job info.
+
+        Get the info with more details.
+
+        Args:
+            job_id: The id of the job, given on job creation or on batch status.
+
+        Returns:
+            A json response containing the client data (if given on job creation), the metadata (if
+            given on job creation), job id, company id, client id creation time, service, source,
+            status (may be "waiting", "error", "processing", "validating" or "done") and the result
+            or error depending on the status. For example:
+            {
+                "client_data": { },
+                "metadata": { },
+                "created_at": "2022-06-22T20:58:09Z",
+                "company_id": "123",
+                "client_id": "1234",
+                "job_id": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "source": "API",
+                "result": {
+                    "Time": "7.45",
+                    "Document": [
+                        {
+                            "Page": 1,
+                            "Data": {
+                                "DocumentType": {
+                                    "conf": 99,
+                                    "value": "CNH"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "service": "idtypification",
+                "status": "done"
+            }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        url = f"{self.base_url}/ocr/job/info/{job_id}"
+
+        resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
+        return resp.json()
+    
+    def get_batch_info(self, batch_id: str):
+        """Get document batch info.
+
+        Get the info of the batch with more details, checking whether it was processed or not.
+
+        Args:
+            batch_id: The id of the batch, given on batch creation.
+
+        Returns:
+            A json response containing the id, company id, client id, creation time, service,
+            source, number of jobs, number of processed jobs and status (may be "waiting", "error",
+            "processing" or "done"). For example:
+            {
+                "company_id": "123",
+                "client_id": "1234",
+                "batch_id": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                "created_at": "2022-06-22T20:58:09Z",
+                "service": "cnh",
+                "status": "done",
+                "source": "API",
+                "total_jobs": 3,
+                "total_processed": 2,
+            }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        url = f"{self.base_url}/ocr/batch/info/{batch_id}"
+
+        resp = self._get(url)
+        validate_status_code(resp.status_code, HTTPStatus.OK)
+
+        return resp.json()
+    
+    def get_batch_result(self, batch_id: str):
+        """Get batch jobs results.
+
+        Get the batch jobs results as array.
+
+        Args:
+            batch_id: The id of the batch, given on batch creation.
+
+        Returns:
+            A json response containing the url to download and the expiration time (1 minute).
+            For example:
+            [
+                {
+                    "client_data": { },
+                    "created_at": "2022-06-22T20:58:09Z",
+                    "job_ksuid": "2AwrSd7bxEMbPrQ5jZHGDzQ4qL3",
+                    "result": {
+                        "Time": "7.45",
+                        "Document": [
+                            {
+                                "Page": 1,
+                                "Data": {
+                                    "DocumentType": {
+                                        "conf": 99,
+                                        "value": "CNH"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "service": "idtypification",
+                    "status": "done",
+                    "filename": "123.jpg"
+                }
+            ]
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        params = {
+            "return": RETURN_REQUEST,
+        }
+
+        return self._get_batch_result(batch_id, params)
+    
+    def get_batch_result_storage(self, batch_id: str, params: dict = None):
+        """Get batch jobs results as file.
+
+        Generate url to download a file containing the batch jobs results.
+
+        Args:
+            batch_id: The id of the batch, given on batch creation.
+            params: The query parameters based on UltraOCR Docs.
+
+        Returns:
+            A json response containing the url to download and the expiration time (1 minute).
+            For example:
+            {
+                "exp": "60000",
+                "url": "https://presignedurldemo.s3.eu-west-2.amazonaws.com/image.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJJWZ7B6WCRGMKFGQ%2F20180210%2Feu-west-2%2Fs3%2Faws4_request&X-Amz-Date=20180210T171315Z&X-Amz-Expires=1800&X-Amz-Signature=12b74b0788aa036bc7c3d03b3f20c61f1f91cc9ad8873e3314255dc479a25351&X-Amz-SignedHeaders=host"
+            }
+
+        Raises:
+            InvalidStatusCodeException: If status code is not 200.
+        """
+        if params is None:
+            params = {}
+
+        params = {
+            **params,
+            "return": RETURN_STORAGE,
+        }
+
+        return self._get_batch_result(batch_id, params)
