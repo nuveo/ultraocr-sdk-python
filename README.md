@@ -158,6 +158,12 @@ With the job or batch id, you can get the job result or batch status with:
 client.get_batch_status("BATCH_ID") # Batches
 client.get_job_result("JOB_ID", "JOB_ID") # Simple jobs
 client.get_job_result("BATCH_ID", "JOB_ID") # Jobs belonging to batches
+client.get_batch_result("BATCH_ID") # Get batch jobs result as array
+client.get_batch_result_storage("BATCH_ID", params=params) # Get batch jobs result in a file
+
+# More details about job and batch
+client.get_batch_info("BATCH_ID") # Batches info (without jobs info)
+client.get_job_info("JOB_ID") # Jobs info (single jobs only)
 ```
 
 Alternatively, you can use a utily `wait_for_job_done` or `wait_for_batch_done`:
