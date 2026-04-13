@@ -8,6 +8,6 @@ setup(
     author="Nuveo",
     install_requires=["requests"],
     setup_requires=["pytest-runner"],
-    tests_require=["pytest==8.3.3", "responses"],
+    tests_require=["pytest==9.0.3", "responses"],
     test_suite="tests",
 )
